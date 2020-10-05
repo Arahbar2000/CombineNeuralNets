@@ -456,13 +456,8 @@ def random_walker(data, labels, beta=130, mode='cg_j', tol=1.e-3, copy=True,
 
     if isolated_values is None:
         # No non isolated zero valued areas in labels were
-        # found. Returning provided labels.
-        if return_full_prob:
-            # Return the concatenation of the masks of each unique label
-            return np.concatenate([np.atleast_3d(labels == lab)
-                                   for lab in np.unique(labels) if lab > 0],
-                                  axis=-1)
-        return labels
+        # found. Returning provided mrcnn segmentation.
+        return data[:, :, 1]
 
     # Build the linear system (lap_sparse, B)
     lap_sparse, B = _build_linear_system(data, spacing, labels, nlabels, mask,
