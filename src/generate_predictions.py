@@ -2,7 +2,7 @@ from predictor import predict
 import os
 from skimage.io import imread
 import argparse
-from skimage.io import imwrite
+from cv2 import imwrite
 import shutil
 
 def parse_arguments():
