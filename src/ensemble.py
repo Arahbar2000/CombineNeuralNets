@@ -54,8 +54,8 @@ def process_all_images(config):
     methods = {'unet': {}, 'mrcnn': {}, 'walker_label': {}, 'walker_binary': {}, 'walker_old': {}, 'union': {}}
     for key in ['jac', 'af1', 'merge_rate', 'split_rate']:
         tables[key] = pd.DataFrame(columns=list(methods.keys()), copy=True)
-    os.makedirs(config.filename, exist_ok=True)
-    root_dir = os.path.join(config.filename, 'images')
+    os.makedirs('../' + config.filename, exist_ok=True)
+    root_dir = os.path.join('..', config.filename, 'images')
     if os.path.exists(root_dir):
         shutil.rmtree(root_dir)
     os.makedirs(root_dir, exist_ok=True)
