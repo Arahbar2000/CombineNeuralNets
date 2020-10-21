@@ -1,1 +1,1 @@
-python3 ./src/ensemble.py -u /Users/arianrahbar/Dropbox/Unet/ContourAdjusted/ -m /Users/arianrahbar/Dropbox/Mrcnn/OutLabels/ -a /Users/arianrahbar/Dropbox/raw_annotations/ -f "$1"
+python3 ./src/ensemble.py -u /mnt/resources/Unet/ContourAdjusted/ -m /mnt/resources/Mrcnn/OutLabels/ -a /mnt/resources/raw_annotations/ -f "$1"

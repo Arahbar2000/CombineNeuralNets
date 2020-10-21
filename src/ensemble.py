@@ -17,17 +17,18 @@ import cProfile
 
 
 class Config:
-    def __init__(self, unet, mrcnn, annot, file, counter=None, erosions=5, beta=30, instance=False):
+    def __init__(self, output, unet, mrcnn, annot, file, counter=None, erosions=5, beta=30, instance=False):
         self.unet = unet
         self.mrcnn = mrcnn
         self.annot = annot
-        f = open('/Users/arianrahbar/Dropbox/' + file)
+        f = open('/mnt/resources/work/CombineNeuralNets/' + file)
         self.files = f.readlines()
         self.instance = instance
         self.filename = file.split('.')[0]
         self.erosions = erosions
         self.beta = beta
         self.counter = counter
+        self.output = output
 
         f.close()
 
@@ -41,13 +42,15 @@ def parse_arguments():
     required.add_argument('-m', '--mrcnn', type=str, required=True)
     required.add_argument('-a', '--annot', type=str, required=True)
     required.add_argument('-f', '--file', type=str, required=True)
+    required.add_argument('-o', '--output', type=str, required=True)
     args = parser.parse_args()
 
     return {
         'mrcnn': args.mrcnn,
         'unet': args.unet,
         'annot': args.annot,
-        'file': args.file
+        'file': args.file,
+        'output': args.output
     }
 
 
@@ -57,11 +60,13 @@ def process_all_images(config):
     methods = {'unet': {}, 'mrcnn': {}, 'walker_label': {}, 'walker_binary': {}, 'walker_old': {}, 'union': {}}
     for key in ['jac', 'af1', 'merge_rate', 'split_rate']:
         tables[key] = pd.DataFrame(columns=list(methods.keys()), copy=True)
-    os.makedirs('../' + config.filename, exist_ok=True)
-    root_dir = os.path.join('..', config.filename, 'images')
+    os.makedirs(config.output, exist_ok=True)
+    root_dir = os.path.join(config.output, config.filename)
     if os.path.exists(root_dir):
         shutil.rmtree(root_dir)
     os.makedirs(root_dir, exist_ok=True)
+    img_dir = os.path.join(root_dir, 'images')
+    os.makedirs(img_dir, exist_ok=True)
     counter = 0
     for file in filenames:
         if counter % 50 == 0:
@@ -95,16 +100,16 @@ def process_all_images(config):
                  'walker_old': methods['walker_old']['results'][key],
                  'union': methods['union']['results'][key]}, ignore_index=True)
         annot_mask = np.where(annot > 0, 255, 0)
-        file_dir = os.path.join(root_dir, file)
+        file_dir = os.path.join(img_dir, file)
         os.makedirs(file_dir, exist_ok=True)
         for method in methods:
             cv2.imwrite(os.path.join(file_dir, f'{method}.png'), methods[method]['mask'])
         cv2.imwrite(os.path.join(file_dir, 'annot.png'), annot_mask)
         counter += 1
 
-    os.makedirs(os.path.join(config.filename, 'stats'), exist_ok=True)
-    output_charts(tables, list(methods.keys()), os.path.join(config.filename, 'stats'), config)
-    output_multiple_tables(tables, os.path.join(config.filename, 'stats'))
+    os.makedirs(os.path.join(root_dir, 'stats'), exist_ok=True)
+    output_charts(tables, list(methods.keys()), os.path.join(root_dir, 'stats'), config)
+    output_multiple_tables(tables, os.path.join(root_dir, 'stats'))
 
 
 def process_all_images_erosions(config):
@@ -313,7 +318,8 @@ def output_multiple_tables(tables, root_dir):
 if __name__ == '__main__':
     options = parse_arguments()
 
-    CONFIG = Config(unet=options['unet'],
+    CONFIG = Config(output=options['output'],
+                    unet=options['unet'],
                     mrcnn=options['mrcnn'],
                     annot=options['annot'],
                     file=options['file'],
