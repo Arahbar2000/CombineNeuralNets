@@ -84,11 +84,19 @@ def _make_graph_edges_3d(n_x, n_y, n_z):
 
 
 def _compute_weights_3d(data, edges, spacing, beta, eps, multichannel):
-    n1 = np.concatenate([np.diff(data[:, :, 0], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
-    n1 = np.where(n1 == 0, 1, 0)
-    n2 = np.concatenate([np.diff(data[:, :, 1], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
-    n2 = np.where(n2 == 0, 1, 0)
-    weights = np.exp(-beta * (1 - ((n1 + n2)/data.shape[2])))
+    # n1 = np.concatenate([np.diff(data[:, :, 0], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
+    # n1 = np.where(n1 == 0, 1, 0)
+    # n2 = np.concatenate([np.diff(data[:, :, 1], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
+    # n2 = np.where(n2 == 0, 1, 0)
+    sum = np.concatenate([np.diff(data[:, :, 0], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
+    sum = np.where(n1 == 0, 1, 0)
+    for d in range(1, data.shape[2]):
+        n = np.concatenate([np.diff(data[:, :, d], axis=ax).ravel() for ax in [1, 0] if data.shape[ax] > 1], axis=0)
+        n = np.where(n1 == 0, 1, 0)
+        sum = sum + n
+
+    # weights = np.exp(-beta * (1 - ((n1 + n2)/data.shape[2])))
+    weights = np.exp(-beta * (1 - (sum / data.shape[2])))
     return -weights
 
 
