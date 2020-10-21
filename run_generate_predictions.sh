@@ -1,0 +1,1 @@
+python3 src/generate_predictions.py -i /mnt/resources/UnetPredictions -o /mnt/resources/UnetPredictionsContourAdjusted

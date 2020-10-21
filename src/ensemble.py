@@ -44,7 +44,10 @@ def parse_arguments():
     args = parser.parse_args()
 
     return {
-        'root': args.root
+        'mrcnn': args.mrcnn,
+        'unet': args.unet,
+        'annot': args.annot,
+        'file': args.file
     }
 
 
@@ -308,10 +311,12 @@ def output_multiple_tables(tables, root_dir):
 
 
 if __name__ == '__main__':
-    CONFIG = Config(unet='/Users/arianrahbar/Dropbox/Unet/ContourAdjusted/',
-                    mrcnn='/Users/arianrahbar/Dropbox/Mrcnn/OutLabels/',
-                    annot='/Users/arianrahbar/Dropbox/raw_annotations/',
-                    file='training.txt',
+    options = parse_arguments()
+
+    CONFIG = Config(unet=options['unet'],
+                    mrcnn=options['mrcnn'],
+                    annot=options['annot'],
+                    file=options['file'],
                     instance=False,
                     erosions=6,
                     beta=30,

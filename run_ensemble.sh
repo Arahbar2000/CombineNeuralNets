@@ -1,0 +1,1 @@
+python3 ./src/ensemble.py -u /Users/arianrahbar/Dropbox/Unet/ContourAdjusted/ -m /Users/arianrahbar/Dropbox/Mrcnn/OutLabels/ -a /Users/arianrahbar/Dropbox/raw_annotations/ -f "$1"
