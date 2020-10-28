@@ -22,8 +22,8 @@ class Config:
         self.root = root
         self.annot = annot
         self.segmentations = [x for x in os.listdir(root) if not x.startswith('.')]
-        # f = open('/mnt/resources/work/CombineNeuralNets/' + file)
-        f = open('/Users/arianrahbar/ResearchEllison/CombineNeuralNets/' + file)
+        f = open('/mnt/resources/work/CombineNeuralNets/' + file)
+        # f = open('/Users/arianrahbar/ResearchEllison/CombineNeuralNets/' + file)
         self.files = f.readlines()
         self.instance = instance
         self.filename = file.split('.')[0]
