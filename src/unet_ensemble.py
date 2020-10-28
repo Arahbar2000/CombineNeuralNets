@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 import shutil
 import seaborn as sns
 from random_walker import random_walker
+from ensemble import Ensemble
+from optimize import Optimize
+import statistics
 
 
 class Config:
@@ -57,9 +60,12 @@ def process_all_images(config):
     ensembles = {}
     for segmentation in config.segmentations:
         segmentations[segmentation] = {}
-    ensembles['ensemble'] = {}
+    ensembles['walker_binary'] = {}
+    ensembles['walker_label'] = {}
+    ensembles['union'] = {}
+    methods = {'unet': {}, 'walker_binary': {}, 'walker_label': {}, 'opt': {}}
     for key in ['jac', 'af1', 'merge_rate', 'split_rate']:
-        tables[key] = pd.DataFrame(columns=list(segmentations.keys()), copy=True)
+        tables[key] = pd.DataFrame(columns=list(methods.keys()), copy=True)
     os.makedirs(config.output, exist_ok=True)
     root_dir = os.path.join(config.output, config.filename)
     if os.path.exists(root_dir):
@@ -80,63 +86,29 @@ def process_all_images(config):
                 annot, segmentations[segmentation]['orig'], False)
             segmentations[segmentation]['mask'] = np.where(segmentations[segmentation]['orig'] > 0, 255, 0)
         for ensemble in ensembles.keys():
-            ensembles[ensemble]['orig'] = ensemble_segmentations_binary(segmentations, config.erosions)
+            ensembles[ensemble]['orig'] = Ensemble([segmentations[segmentation]['orig']
+                                                    for segmentation in segmentations.keys()],
+                                                   config.erosions, config.beta).ensemble(ensemble)
             ensembles[ensemble]['results'] = comp.get_per_image_metrics(annot, ensembles[ensemble]['orig'], False)
             ensembles[ensemble]['mask'] = np.where(ensembles[ensemble]['orig'] > 0, 255, 0)
+        opt_ensemble = Optimize(segmentations, ensembles).optimize()
+
         for key in tables.keys():
             results = {}
-            for segmentation in segmentations.keys():
-                results[segmentation] = segmentations[segmentation]['results'][key]
+            # for segmentation in segmentations.keys():
+            #     results[segmentation] = segmentations[segmentation]['results'][key]
+            avg = statistics.mean([segmentations[segmentation]['results'][key] for segmentation in segmentations])
+            results['unet'] = avg
             for ensemble in ensembles.keys():
-                results[ensemble] = ensembles[ensemble]['results'][key]
+                if ensemble != 'union':
+                    results[ensemble] = ensembles[ensemble]['results'][key]
+            results['opt'] = ensembles[opt_ensemble]['results'][key]
             tables[key] = tables[key].append(results, ignore_index=True)
         counter += 1
 
     os.makedirs(os.path.join(root_dir, 'stats'), exist_ok=True)
-    methods = list(segmentations.keys())
-    methods.extend(list(ensembles.keys()))
-    output_charts(tables, methods,
+    output_charts(tables, list(methods.keys()),
                   os.path.join(root_dir, 'stats'), config)
-
-
-def ensemble_segmentations_label(segmentations, erosions=5, beta=30):
-    erode_images(segmentations, erosions)
-    seed_union = np.zeros_like(segmentations[list(segmentations.keys())[0]]['orig'])
-    orig_intersection = np.zeros_like(seed_union)
-    for segmentation in segmentations.keys():
-        seed_union = seed_union + segmentations[segmentation]['seed']
-        orig_intersection = orig_intersection + segmentations[segmentation]['orig']
-    labels = np.where(seed_union > 0, 1, 0)
-    labels = skimage.measure.label(labels)
-    labels, _, _ = skimage.segmentation.relabel_sequential(labels, offset=2)
-    labels[orig_intersection == 0] = 1
-    data = np.dstack([segmentations[segmentation]['orig'] for segmentation in segmentations.keys()])
-    final = random_walker(data, labels, beta=beta, mode='bf')
-    final[final == 1] = 0
-    return skimage.segmentation.label(final)
-
-
-def ensemble_segmentations_binary(segmentations, erosions=5, beta=30):
-    erode_images(segmentations, erosions)
-    seed_union = np.zeros_like(segmentations[list(segmentations.keys())[0]]['orig'])
-    orig_intersection = np.zeros_like(seed_union)
-    for segmentation in segmentations.keys():
-        seed_union = seed_union + segmentations[segmentation]['seed']
-        orig_intersection = orig_intersection + segmentations[segmentation]['orig']
-    labels = np.where(seed_union > 0, 1, 0)
-    labels[orig_intersection == 0] = 2
-    data = np.dstack([segmentations[segmentation]['orig'] for segmentation in segmentations.keys()])
-    final = random_walker(data, labels, beta=beta, mode='bf')
-    final[final == 2] = 0
-    return skimage.measure.label(final)
-
-
-def erode_images(segmentations, num):
-    for segmentation in segmentations.keys():
-        segmentations[segmentation]['seed'] = segmentations[segmentation]['orig'].copy()
-    for i in range(num):
-        for segmentation in segmentations.keys():
-            segmentations[segmentation]['seed'] = skimage.morphology.erosion(segmentations[segmentation]['seed'])
 
 
 def output_charts(tables, methods, root_dir, config):
@@ -167,21 +139,6 @@ def output_charts(tables, methods, root_dir, config):
         plt.ylabel(f'{reference[key]}')
         plt.savefig(os.path.join(root_dir, f'{reference[key].split()[0]}_averages.png'))
         plt.clf()
-
-
-def output_multiple_tables(tables, root_dir):
-    reference = {
-        'jac': 'Jaccard Score',
-        'af1': 'F1 Score',
-        'merge_rate': 'Merge Rate',
-        'split_rate': 'Split Rate'
-    }
-    f = open(os.path.join(root_dir, 'tables.txt'), 'w')
-    for key in tables.keys():
-        f.write(f'{reference[key]}')
-        f.write(tables[key].to_string(index=True))
-        f.write('\n\n')
-    f.close()
 
 
 if __name__ == '__main__':
