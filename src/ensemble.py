@@ -24,7 +24,7 @@ class Ensemble:
     def walker_binary(self, erosions=None):
         if erosions is None:
             erosions = self.erosions
-        seeds = self._erode_images()
+        seeds = self._erode_images(erosions)
         seed_union = np.zeros_like(seeds[0])
         orig_intersection = np.zeros_like(self.segmentation_list[0])
         for i in range(len(self.segmentation_list)):
@@ -64,16 +64,18 @@ class Ensemble:
         erosions = {}
         for i in range(2, 9):
             erosions[i] = {}
-        for erosion in erosions.keys():
-            erosions[erosion]['orig'] = self.walker_binary(erosions=erosion)
-            erosions[erosion]['mask'] = np.where(erosions[erosion]['orig'] > 0, 255, 0)
+        for i in erosions.keys():
+            erosions[i]['orig'] = self.walker_binary(erosions=i)
+            erosions[i]['mask'] = np.where(erosions[i]['orig'] > 0, 255, 0)
         opt = Optimize(self.segmentations, erosions).optimize()
         return erosions[opt]['orig']
 
 
-    def _erode_images(self):
+    def _erode_images(self, erosions=None):
+        if erosions is None:
+            erosions = self.erosions
         seeds = [x.copy() for x in self.segmentation_list]
-        for i in range(self.erosions):
+        for i in range(erosions):
             for j in range(len(self.segmentation_list)):
                 seeds[j] = erosion(seeds[j])
         return seeds
