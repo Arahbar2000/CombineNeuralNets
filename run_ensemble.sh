@@ -1,1 +1,1 @@
-python3 ./src/ensemble.py -o /mnt/resources/ensemble_results -r /mnt/resources/UnetPredictions -a /mnt/resources/raw_annotations/ -f "$1"
+python3 ./src/unet_ensemble.py -o /mnt/resources/ensemble_results -r /mnt/resources/UnetPredictions -a /mnt/resources/raw_annotations/ -f "$1"
