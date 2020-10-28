@@ -61,9 +61,9 @@ def process_all_images(config):
     for segmentation in config.segmentations:
         segmentations[segmentation] = {}
     ensembles['walker_binary'] = {}
-    ensembles['walker_label'] = {}
-    ensembles['union'] = {}
-    methods = {'unet': {}, 'walker_binary': {}, 'walker_label': {}, 'opt': {}}
+    ensembles['opt'] = {}
+    erosions = {}
+    methods = {'unet': {}, 'walker_binary': {}, 'opt': {}}
     for key in ['jac', 'af1', 'merge_rate', 'split_rate']:
         tables[key] = pd.DataFrame(columns=list(methods.keys()), copy=True)
     os.makedirs(config.output, exist_ok=True)
@@ -86,13 +86,9 @@ def process_all_images(config):
                 annot, segmentations[segmentation]['orig'], False)
             segmentations[segmentation]['mask'] = np.where(segmentations[segmentation]['orig'] > 0, 255, 0)
         for ensemble in ensembles.keys():
-            ensembles[ensemble]['orig'] = Ensemble([segmentations[segmentation]['orig']
-                                                    for segmentation in segmentations.keys()],
-                                                   config.erosions, config.beta).ensemble(ensemble)
+            ensembles[ensemble]['orig'] = Ensemble(segmentations, config.erosions, config.beta).ensemble(ensemble)
             ensembles[ensemble]['results'] = comp.get_per_image_metrics(annot, ensembles[ensemble]['orig'], False)
             ensembles[ensemble]['mask'] = np.where(ensembles[ensemble]['orig'] > 0, 255, 0)
-        opt_ensemble = Optimize(segmentations, ensembles).optimize()
-
         for key in tables.keys():
             results = {}
             # for segmentation in segmentations.keys():
@@ -102,7 +98,6 @@ def process_all_images(config):
             for ensemble in ensembles.keys():
                 if ensemble != 'union':
                     results[ensemble] = ensembles[ensemble]['results'][key]
-            results['opt'] = ensembles[opt_ensemble]['results'][key]
             tables[key] = tables[key].append(results, ignore_index=True)
         counter += 1
 
